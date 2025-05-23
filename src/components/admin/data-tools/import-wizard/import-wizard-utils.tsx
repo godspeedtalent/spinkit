@@ -20,7 +20,7 @@ export interface StagedPayloadItem {
 }
 
 export interface StagedDataFormat {
-  driver: "notion" | "mongodb" | "localJson" | "notion_template" | "json_template" | "json_flat_object" | "unknown";
+  driver: "notion" | "mongodb" | "localJson" | "notion_template" | "json_template" | "json_flat_object" | "unknown" | "mongodb_spinkit";
   driverInfo?: string; // User-friendly name of the driver/format
   payload: StagedPayloadItem[];
   selectedEntities?: string[]; // For template generation, names of entities included
@@ -75,11 +75,21 @@ export const getDisplayValue = (
 ): string | null | JSX.Element => {
   let value: any;
   const isNotionSource = driverType === 'notion' || driverType === 'notion_template';
+  const isSpinKitMongoSource = driverType === 'mongodb_spinkit';
 
-  if (isNotionSource && !isTransformedPreview && record?.properties?.[columnKey]) {
+  if (isSpinKitMongoSource && !isTransformedPreview && record && typeof record === 'object') {
+    if (columnKey === 'id' && Object.prototype.hasOwnProperty.call(record, 'id')) {
+      value = record.id;
+    } else if (record.properties && typeof record.properties === 'object' && Object.prototype.hasOwnProperty.call(record.properties, columnKey)) {
+      value = record.properties[columnKey];
+    } else {
+      return null; // Column not found in properties or as top-level id
+    }
+  } else if (isNotionSource && !isTransformedPreview && record?.properties?.[columnKey]) {
     const property = record.properties[columnKey];
     if (!property || !property.type || ['button', 'rollup', 'relation'].includes(String(property.type).toLowerCase())) return null;
 
+    // Existing Notion property handling logic...
     switch (String(property.type).toLowerCase()) {
       case 'title': value = property.title?.[0]?.plain_text; break;
       case 'rich_text': value = property.rich_text?.[0]?.plain_text; break;
@@ -160,6 +170,7 @@ export const transformSingleRecord = (
   const transformedRecord: Record<string, any> = {};
   let hasAtLeastOneMappedField = false;
   const isNotionSource = driverType === 'notion' || driverType === 'notion_template';
+  const isSpinKitMongoSource = driverType === 'mongodb_spinkit';
 
   Object.keys(currentTableColMappings).forEach(srcCol => {
     const targetFieldOrInstruction = currentTableColMappings[srcCol];
@@ -168,8 +179,18 @@ export const transformSingleRecord = (
     }
 
     let rawValue: any;
-    if (isNotionSource && record.properties?.[srcCol]) {
+
+    if (isSpinKitMongoSource) {
+      if (srcCol === 'id' && Object.prototype.hasOwnProperty.call(record, 'id')) {
+        rawValue = record.id;
+      } else if (record.properties && typeof record.properties === 'object' && Object.prototype.hasOwnProperty.call(record.properties, srcCol)) {
+        rawValue = record.properties[srcCol];
+      } else {
+        rawValue = undefined; // Source column not found in properties or as top-level id
+      }
+    } else if (isNotionSource && record.properties?.[srcCol]) {
       const prop = record.properties[srcCol];
+      // Existing Notion property extraction logic
       if (!prop || !prop.type || ['button', 'rollup', 'relation'].includes(String(prop.type).toLowerCase()) || isNotionPropertyEmpty(prop)) {
         rawValue = undefined;
       } else {
@@ -185,36 +206,37 @@ export const transformSingleRecord = (
           case 'url': rawValue = prop.url; break;
           case 'email': rawValue = prop.email; break;
           case 'phone_number': rawValue = prop.phone_number; break;
-          case 'files': // Extract URL of the first file
+          case 'files': 
             rawValue = (prop.files?.length > 0) ? (prop.files[0]?.file?.url || prop.files[0]?.external?.url) : undefined;
             break;
-          case 'created_time': case 'last_edited_time': rawValue = prop[prop.type]; break; // Store as ISO string
-          case 'created_by': case 'last_edited_by': rawValue = prop[prop.type]?.id; break; // Store user ID
+          case 'created_time': case 'last_edited_time': rawValue = prop[prop.type]; break; 
+          case 'created_by': case 'last_edited_by': rawValue = prop[prop.type]?.id; break; 
           case 'formula':
             const f = prop.formula;
             if (f?.type === 'string') rawValue = f.string;
             else if (f?.type === 'number') rawValue = f.number;
             else if (f?.type === 'boolean') rawValue = f.boolean;
-            else if (f?.type === 'date' && f.date?.start) rawValue = f.date.start; // Store as ISO string
+            else if (f?.type === 'date' && f.date?.start) rawValue = f.date.start; 
             else rawValue = undefined;
             break;
           case 'unique_id':
             const uid = prop.unique_id;
             rawValue = `${uid?.prefix ? uid.prefix + '-' : ''}${uid?.number}`;
             break;
-          default: // For other types, try to get the primary value or stringify
+          default: 
             const propContent = prop[prop.type];
             rawValue = (typeof propContent !== 'object' || propContent === null) ? propContent : JSON.stringify(propContent);
             break;
         }
       }
     } else if (record && Object.prototype.hasOwnProperty.call(record, srcCol)) {
+      // This handles flat JSON, or non-SpinKit MongoDB where driver might be just 'mongodb'
       rawValue = record[srcCol];
     } else {
       rawValue = undefined;
     }
 
-    // Basic type coercion for "Yes"/"No" to boolean
+    // Basic type coercion for "Yes"/"No" to boolean (remains the same)
     let valueToSet: any = rawValue;
     if (typeof rawValue === 'string') {
       const lowerVal = rawValue.toLowerCase();

@@ -166,3 +166,22 @@ export type RecordingSortOption = "title_asc" | "title_desc" | "artist_asc" | "a
 
 // Card Size Type
 export type CardSize = "small" | "medium" | "large";
+
+// Interfaces for SpinKit Export
+export interface SpinKitExport {
+  driver: "notion" | "mongodb";
+  exportDate: string; // ISO date
+  connectionName: string;
+  payload: SpinKitPayloadTable[];
+}
+
+export interface SpinKitPayloadTable {
+  name: string; // collection/database name
+  id: string; // collection/database ID
+  records: SpinKitRecord[];
+}
+
+export interface SpinKitRecord {
+  id: string; // original record ID
+  properties: object; // the actual data, can be `any` or a generic type for now
+}

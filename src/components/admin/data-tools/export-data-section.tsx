@@ -54,19 +54,19 @@ import {
   RefreshCw,
   ArrowLeft
 } from 'lucide-react';
+import { SpinKitExport, SpinKitPayloadTable, SpinKitRecord } from '@/types';
 
 interface AvailableTable {
   id: string;
   name: string;
 }
 
-interface AggregatedExportData {
-  driver: DatabaseConnection['type'] | string;
-  exportDate: string;
-  connectionName?: string;
-  selectedDatabases?: string[]; // For Notion: list of DB names exported
-  selectedEntities?: string[]; // For MongoDB/LocalJSON: list of entity/collection names exported
-  payload: Array<{ name: string; id?: string; records: any[] }>;
+// Extends SpinKitExport with UI-specific fields
+interface UIDataExport extends SpinKitExport {
+  // driver, exportDate, payload are from SpinKitExport
+  connectionName?: string; // UI specific, might be useful for logs or context
+  selectedDatabases?: string[]; // For Notion: list of DB names exported (UI context)
+  selectedEntities?: string[]; // For MongoDB/LocalJSON: list of entity/collection names exported (UI context)
 }
 
 
@@ -238,18 +238,19 @@ export default function ExportDataSection() {
     let exportDetailsLog: string[] = [`Export format: ${exportFormat.toUpperCase()}`];
     let successfullyExportedCount = 0;
     
-    const aggregatedExportData: AggregatedExportData = {
-      driver: selectedConnection.type === 'notion' ? "notion_transformed" : selectedConnection.type,
+    const driverValue: "notion" | "mongodb" = selectedConnection.type === 'notion' 
+      ? "notion" 
+      : "mongodb"; // localJson is treated as mongodb
+
+    const uiExportData: UIDataExport = {
+      driver: driverValue,
       exportDate: new Date().toISOString(),
       connectionName: selectedConnection.name,
       payload: [],
+      // UI specific fields, initialize if needed, or they can be populated later
+      selectedDatabases: selectedConnection.type === 'notion' ? [] : undefined,
+      selectedEntities: selectedConnection.type !== 'notion' ? [] : undefined,
     };
-
-    if (selectedConnection.type === 'notion') {
-      aggregatedExportData.selectedDatabases = [];
-    } else {
-      aggregatedExportData.selectedEntities = [];
-    }
 
     try {
       if (selectedConnection.type === 'notion') {
@@ -266,10 +267,16 @@ export default function ExportDataSection() {
               toast({ title: `Error Exporting ${table.name}`, description: errorMsg.substring(0, 200), variant: "destructive", duration: 10000 });
               continue; 
             }
-            const transformedPagesData = await response.json();
+            // Assuming transformedPagesData is an array of objects like { notion_page_id: string, properties: object, ... }
+            const transformedPagesData: Array<{ notion_page_id: string, properties: object }> = await response.json();
+            
             if (transformedPagesData && transformedPagesData.length > 0) {
-              aggregatedExportData.payload.push({ name: table.name, id: table.id, records: transformedPagesData });
-              aggregatedExportData.selectedDatabases!.push(table.name);
+              const records: SpinKitRecord[] = transformedPagesData.map(page => ({
+                id: page.notion_page_id,
+                properties: page.properties,
+              }));
+              uiExportData.payload.push({ name: table.name, id: table.id, records });
+              if (uiExportData.selectedDatabases) uiExportData.selectedDatabases.push(table.name);
               successfullyExportedCount++;
             } else {
               exportDetailsLog.push(`No records found or fetched for Notion DB: "${table.name}".`);
@@ -287,14 +294,16 @@ export default function ExportDataSection() {
         exportDetailsLog.push(`Fetching data from ${sourceTypeText} for ${tablesToExportDetails.length} collection(s)/entities...`);
         
         for (const table of tablesToExportDetails) {
-          const actualCollectionOrEntityKey = table.id;
+          const actualCollectionOrEntityKey = table.id; // This is the collection name for MongoDB or entity key for LocalJSON
           let entityKeyForApi = actualCollectionOrEntityKey; 
           
+          // For MongoDB, map collection name back to entity key if needed for API path
           if (selectedConnection.type === 'mongodb' && selectedConnection.collections) {
              const foundKey = (Object.keys(selectedConnection.collections) as Array<keyof typeof selectedConnection.collections>)
               .find(key => selectedConnection.collections![key as keyof typeof selectedConnection.collections] === actualCollectionOrEntityKey);
-            if (foundKey) entityKeyForApi = foundKey;
-            else {
+            if (foundKey) {
+              entityKeyForApi = foundKey; // Use the entity key (e.g., "djs", "venues") for the API path
+            } else {
                 const errorMsg = `Could not determine entity key for MongoDB collection "${actualCollectionOrEntityKey}". Skipping.`;
                 exportDetailsLog.push(`ERROR: ${errorMsg}`);
                 appLogger.error(errorMsg);
@@ -302,9 +311,10 @@ export default function ExportDataSection() {
                 continue;
             }
           }
+          // For LocalJSON, actualCollectionOrEntityKey is already the entity key (e.g., "djs", "venues")
           
           const apiPath = `/api/${entityKeyForApi.toLowerCase()}?limit=10000`;
-          appLogger.info(`[ExportData] Fetching from ${sourceTypeText}: ${table.name} via API: ${apiPath}`);
+          appLogger.info(`[ExportData] Fetching from ${sourceTypeText}: ${table.name} (Key: ${entityKeyForApi}, ID: ${table.id}) via API: ${apiPath}`);
 
           try {
             const response = await fetch(apiPath);
@@ -317,11 +327,18 @@ export default function ExportDataSection() {
               continue;
             }
             const responseData: PaginatedResponse<any> = await response.json();
-            const records = responseData.items || (Array.isArray(responseData) ? responseData : []);
+            // Ensure items exist, default to empty array if not
+            const items = responseData.items || (Array.isArray(responseData) ? responseData : []); 
             
-            if (records && records.length > 0) {
-              aggregatedExportData.payload.push({ name: table.name, id: table.id, records });
-              aggregatedExportData.selectedEntities!.push(table.name);
+            if (items && items.length > 0) {
+              const records: SpinKitRecord[] = items.map(item => ({
+                id: item.id, // Assuming each item has an 'id' field
+                properties: item,
+              }));
+              // table.id here is the actual collection name (for mongo) or entity key (for localJson)
+              // table.name is the user-friendly name
+              uiExportData.payload.push({ name: table.name, id: table.id, records });
+              if (uiExportData.selectedEntities) uiExportData.selectedEntities.push(table.name);
               successfullyExportedCount++;
             } else {
               exportDetailsLog.push(`No records found or fetched for ${sourceTypeText} entity: "${table.name}".`);
@@ -335,24 +352,35 @@ export default function ExportDataSection() {
           }
         }
       } else {
+        // This case should ideally not be hit if connections are only notion, mongodb, localJson
         exportDetailsLog.push(`Export for type "${selectedConnection.type}" not fully implemented for direct download. Simulating process.`);
         await new Promise(resolve => setTimeout(resolve, 1000));
         tablesToExportDetails.forEach(t => {
-            aggregatedExportData.payload.push({ name: t.name, id: t.id, records: [{mock: "data", note: "This is a placeholder due to unimplemented export for this type."}] });
-            if(aggregatedExportData.selectedEntities) aggregatedExportData.selectedEntities.push(t.name);
-            else if(aggregatedExportData.selectedDatabases) aggregatedExportData.selectedDatabases.push(t.name);
+            // Create a placeholder SpinKitPayloadTable structure
+            const placeholderRecords: SpinKitRecord[] = [{id: "placeholder_id", properties: {mock: "data", note: "This is a placeholder due to unimplemented export for this type."}}];
+            uiExportData.payload.push({ name: t.name, id: t.id, records: placeholderRecords });
+            if(uiExportData.selectedEntities) uiExportData.selectedEntities.push(t.name);
+            else if(uiExportData.selectedDatabases) uiExportData.selectedDatabases.push(t.name); // Should not happen for this "else"
             successfullyExportedCount++;
         });
       }
 
-      if (aggregatedExportData.payload.length > 0) {
-        const jsonData = JSON.stringify(aggregatedExportData, null, 2);
+      if (uiExportData.payload.length > 0) {
+        // Prepare the data for JSON stringification, excluding UI-specific fields for the final JSON
+        const exportDataForJson: SpinKitExport = {
+            driver: uiExportData.driver,
+            exportDate: uiExportData.exportDate,
+            connectionName: uiExportData.connectionName || selectedConnection.name, // fallback, though connectionName is in SpinKitExport
+            payload: uiExportData.payload,
+        };
+        const jsonData = JSON.stringify(exportDataForJson, null, 2);
         const blob = new Blob([jsonData], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         a.href = url;
-        a.download = `${(aggregatedExportData.driver || 'data').replace(/_/g, '-')}_export_${selectedConnection.name.replace(/\s+/g, '_')}_${timestamp}.json`;
+        // Use uiExportData.driver for the filename, which is correctly "notion" or "mongodb"
+        a.download = `${uiExportData.driver}_export_${selectedConnection.name.replace(/\s+/g, '_')}_${timestamp}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -372,7 +400,7 @@ export default function ExportDataSection() {
         exportStatus = 'Failure';
       }
       
-      const finalToastMessage = aggregatedExportData.payload.length > 0 
+      const finalToastMessage = uiExportData.payload.length > 0
         ? `Data export from "${selectedConnection.name}" complete. ${successfullyExportedCount} of ${tablesToExportDetails.length} selected entities/databases had data included. Download started.`
         : `Data export from "${selectedConnection.name}" finished. No data was found in the selected entities/databases to export.`;
 
