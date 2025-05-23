@@ -278,20 +278,40 @@ export default function ImportDataSection() {
           const originalRecords = item.records || [];
           let columnsSet = new Set<string>();
           const sampleSizeForColDetection = Math.min(10, originalRecords.length);
+          let isSpinKitMongoFormat = false;
+
+          if (sampleSizeForColDetection > 0 && (detectedDriver === 'mongodb' || detectedDriver === 'localJson')) {
+            const firstRecord = originalRecords[0];
+            if (firstRecord && typeof firstRecord.id === 'string' && firstRecord.properties && typeof firstRecord.properties === 'object') {
+              isSpinKitMongoFormat = true;
+              appLogger.info(`[handleStageData] Detected SpinKit MongoDB format for table: ${sourceTableName}`);
+            }
+          }
 
           for (let i = 0; i < sampleSizeForColDetection; i++) {
             const record = originalRecords[i];
-            if (detectedDriver === 'notion' || detectedDriver === 'notion_template') {
-              if (record?.properties && typeof record.properties === 'object') {
+            if (!record || typeof record !== 'object') continue;
+
+            if (isSpinKitMongoFormat) {
+              // For SpinKit MongoDB format, columns are from `properties` object, plus 'id'
+              if (record.properties && typeof record.properties === 'object') {
+                Object.keys(record.properties).forEach(key => columnsSet.add(key));
+              }
+              columnsSet.add('id'); // Add 'id' as a top-level column
+            } else if (detectedDriver === 'notion' || detectedDriver === 'notion_template') {
+              // For Notion, columns are from `properties` object's keys based on type
+              if (record.properties && typeof record.properties === 'object') {
                 Object.entries(record.properties).forEach(([propName, propDetails]: [string, any]) => {
                   const propTypeLower = String(propDetails?.type).toLowerCase();
-                  if (propDetails && propTypeLower && !['button', 'rollup', 'relation'].includes(propTypeLower)) {
+                  // Exclude certain Notion-specific property types that aren't simple data fields
+                  if (propDetails && propTypeLower && !['button', 'rollup', 'relation', 'formula', 'people', 'files', 'url', 'email', 'phone'].includes(propTypeLower)) {
                     columnsSet.add(propName);
                   }
                 });
               }
             } else {
-              if (record && typeof record === 'object') Object.keys(record).forEach(key => columnsSet.add(key));
+              // For other flat JSON structures (including non-SpinKit MongoDB)
+              Object.keys(record).forEach(key => columnsSet.add(key));
             }
           }
           const allColsForTable = Array.from(columnsSet).sort();
@@ -311,7 +331,8 @@ export default function ImportDataSection() {
               let filledFields = 0;
               if (!record || typeof record !== 'object') return { record, completeness: 0 };
               allColsForTable.forEach(colName => {
-                  const val = getDisplayValue(record, colName, detectedDriver, false);
+                  // For SpinKit MongoDB, getDisplayValue will need to know to look in record.properties if colName is not 'id'
+                  const val = getDisplayValue(record, colName, isSpinKitMongoFormat ? 'mongodb_spinkit' : detectedDriver, false);
                   if (val !== null && String(val).trim() !== '' && String(val).trim().toLowerCase() !== 'empty') filledFields++;
               });
               const completeness = allColsForTable.length > 0 ? (filledFields / allColsForTable.length) * 100 : 0;
