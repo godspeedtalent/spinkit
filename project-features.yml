@@ -1,0 +1,252 @@
+
+# SpinKit Application Feature List
+
+core_app_structure:
+  theme: Default Dark Mode (#121212 background, primary gold, secondary muted rose)
+  app_name: SpinKit
+  logo: DJ Icon (lucide-react: Disc3)
+  navigation:
+    main_layout:
+      - Collapsible Left Navbar (Sidebar by ShadCN)
+      - Displays icons when collapsed, full text + icons when expanded
+      - User Account & Settings links at the bottom of the sidebar
+    header_features:
+      - Breadcrumb Navigation System (replaces back buttons)
+      - Universal Search Bar (mock autocomplete with grouped suggestions, opens focused overlay)
+      - City Selector Dropdown (mock, for Fans: Worldwide, National, specific cities)
+    nav_items:
+      - Grouped into collapsible accordions (e.g., Home, Social, Discovery, Tools, Admin Panel)
+      - Role-based visibility (Admin, Buyer, Artist, Fan, Guest)
+
+authentication_user_roles:
+  login_page:
+    path: /login
+    layout: Two-column (left: embedded YouTube video, right: login form)
+    functionality: Mock login, link to Signup page
+    default_landing: True for unauthenticated users
+  signup_page:
+    path: /signup
+    layout: Multi-step wizard
+    steps:
+      - Role selection (Buyer, Artist, Fan)
+      - Basic account info (Email, Password, Username for Fan, Profile Pic for Fan)
+      - Role-specific info (Venue details for Buyer, Artist details for Artist, Genre preferences for Fan)
+      - Confirmation
+    functionality: Mock signup, link to Login page
+  dashboards:
+    path: / (Home)
+    role_based_rendering: True
+    types:
+      admin: System-wide analytics (users, venues, artists, transactions, alerts), mock charts for user growth & transaction volume.
+      buyer: Venue-focused (Find Artists, Manage Venue Profile, Upcoming Bookings, Payments).
+      artist: Artist-focused (Edit Profile, Find Gigs, Upcoming Gigs, Performance Insights, Messages, Artist Configuration).
+      fan: Discovery-focused (Featured Artists, Upcoming Events, Explore Venues/Artists).
+
+user_profile_settings:
+  profile_page:
+    path: /profile
+    features: Mock view of Full Name, Email, Bio, Profile Picture. Link to Edit Profile page. Placeholder for Spotify account linking (Fan role).
+  edit_profile_page:
+    path: /profile/edit
+    features: Mock form for Full Name, Email, Bio, Profile Picture. Placeholder for Spotify account linking (Fan role).
+  settings_page:
+    path: /settings
+    sections:
+      - Link to Edit Profile page
+      - Notification Preferences (mock switches: Email, Gig Alerts, Message Notifications)
+      - Messaging Preferences (Buyer/Artist roles): Toggle to restrict messages from Fans (mock).
+      - Account Security (mock placeholders: Change Password, Enable 2FA)
+      - Delete Account:
+        - Button to initiate.
+        - Multi-step AlertDialog confirmation process (simulated deletion).
+
+discovery_features: # All roles can access discovery items
+  artists_djs:
+    main_page: /djs (Navbar link: "Artists")
+    access: All authenticated roles
+    filter_bar: Collapsible left sidebar (Sheet on mobile, fixed panel on desktop). Filters: Genre (multi-select), Location (text), Score (slider 60-100). "Favorited" checkbox.
+    listing_view: Card-based (Small, Medium, Large size options).
+    card_details: Image, Name, Location, Genres (pills linking to Genre Detail), Score (only if >59, no "/100").
+    card_actions: Image/Name link to profile, Eye icon button (View Profile tooltip), Pin icon button (circular, small), Favorite (Heart) icon button, Pop-out icon button (mock quick view).
+  artist_dj_profile:
+    path: /djs/[id]
+    access: All authenticated roles
+    details_view: Image, Name, Genres (pills), Location, Score, Bio, Specialties.
+    discography_section: Lists recordings (artwork, title, album, type, year), links to Recording Detail.
+    fan_comments_section: Mock input form, displays mock comments.
+    actions: Pin icon button.
+  venues:
+    main_page: /venues
+    access: All authenticated roles
+    filter_bar: Collapsible left sidebar. Filters: Location (text), Min Capacity (slider), Min Fan Score (slider), Genres (multi-select). "Favorited" checkbox.
+    listing_view: Card-based (Small, Medium, Large size options).
+    card_details: Image, Name, Location, Capacity, Fan Score, Genres (pills linking to Genre Detail).
+    card_actions: Image/Name link to profile, Eye icon button, Pin icon button, Favorite (Heart) icon button, Pop-out icon button.
+    admin_actions: "Add New Venue" button visible only to Admins (links to /venues/create).
+  venue_profile:
+    path: /venues/[id]
+    access: All authenticated roles
+    details_view: Large image, Name, Location, Description, Capacity, Typical Event Days, Sound System, Genres.
+    stats_cards: Total Bookings, Fan Score, Total RSVPs.
+    fan_reviews_section: Mock star rating input, text review input, displays mock reviews.
+    actions: Pin icon button, Contact Venue (mock), Check Availability (mock).
+  create_venue_profile:
+    path: /venues/create
+    access: Admin role only (also accessible via Admin Customer Tools).
+    features: Form for venue details (Name, Location, Capacity, Description, Image upload).
+  recordings:
+    main_page: /recordings
+    access: All authenticated roles
+    filter_bar: Genre dropdown, "Favorited" checkbox. (No full sidebar yet)
+    listing_view: Card-based (Small, Medium, Large size options).
+    card_details: Artwork, Title, Artist (links to Artist Profile), Album, Type, Year.
+    card_actions: Links to Recording Detail, Eye icon button, Pin icon button, Favorite (Heart) icon button, Pop-out icon button.
+  recording_profile:
+    path: /recordings/[id]
+    access: All authenticated roles
+    details_view: Artwork, Title, Artist, Album, Year, Type, Genre (pill linking to Genre Detail), Description.
+    stats: Fan Score, Total Plays.
+    fan_zone:
+      - Mock rating slider (0-10).
+      - Fan Comments section (mock input form, displays mock comments).
+    actions: Pin icon button, Play (mock button), View Artist button.
+  events:
+    main_page: /events
+    access: All authenticated roles
+    filter_bar: Collapsible left sidebar. Filters: Genre (multi-select), City (multi-select). "Favorited" checkbox.
+    listing_view: Card-based (Small, Medium, Large size options).
+    card_details: Image, Name, Artist (optional, links to Artist profile), Venue (links to Venue profile), Date, Time, City, Genres (pills).
+    card_actions: View Details/Tickets (mock), Pin icon button, Favorite (Heart) icon button, Pop-out icon button.
+  genres:
+    main_page: /genres
+    access: All authenticated roles
+    listing_view: List of all available genres, linking to Genre Detail pages.
+  genre_profile:
+    path: /genres/[genreName]
+    access: All authenticated roles
+    details_view: Genre name, description.
+    content_sections: Mock lists for "Top Artists," "Venues Booking [Genre]," "Fans of [Genre]."
+    actions: Pin icon button.
+
+ai_features_genkit:
+  smart_scheduling:
+    path: /scheduling
+    access: Buyer/Admin roles.
+    functionality: User inputs venue data (ID, sales, weather, events), AI suggests optimal Artist booking times and reasoning.
+  performance_insights:
+    path: /performance
+    access: Artist/Admin roles.
+    functionality: User inputs Artist performance data (name, venue, date, sales, weather, other events), AI generates effectiveness summary and rating.
+  artist_config_tool:
+    path: /tools/artist-config
+    access: Artist/Admin roles
+    layout: Settings-like (left nav, right content)
+    sections:
+      - General Artist Settings (public_profile_visibility, contact_preferences, preferred_genres_gigs, preferred_event_types, typical_set_lengths, travel_willingness, travel_radius, min_notice_bookings, standard_rate)
+      - Performance Rider (technical_rider_details, hospitality_rider_details, stage_plot_upload_placeholder)
+
+transactions:
+  payments_page:
+    path: /payments
+    access: Buyer/Artist/Admin roles.
+    features: Mock payment management. Shows bank linking prompt if not linked.
+  link_bank_account_page:
+    path: /payments/link-bank
+    access: Buyer/Artist/Admin roles.
+    features: Mock form to link bank account (simulated Stripe).
+  
+bookings_page: # New Section for /bookings
+  path: /bookings
+  access: Buyer/Artist roles
+  layout: Tabbed (My Bookings, Availability, Booking Requests)
+  artist_view:
+    my_bookings_tab: Lists mock upcoming and past gigs (Event Name, Venue, Date, Status, Pay).
+    availability_tab: Placeholders for managing calendar, standard rate, min booking duration, availability notes.
+    booking_requests_tab: Placeholder for managing incoming requests from venues.
+  buyer_view:
+    venue_bookings_tab: Lists mock confirmed artists for venue events. Links to scheduler.
+    pending_requests_tab: Lists mock booking requests sent to artists.
+
+admin_features:
+  admin_dashboard: Already covered under `authentication_user_roles.dashboards.admin`.
+  customer_tools_page:
+    path: /admin/customer-tools
+    access: Admin role only
+    layout: Settings-like (left nav, right content)
+    sections:
+      onboarding:
+        - add_venue (manual form)
+      management:
+        - user_management (placeholder)
+      communication:
+        - communication_tools (placeholder)
+  data_tools_page:
+    path: /admin/data-tools
+    access: Admin role only
+    layout: Settings-like (left nav, right content)
+    sections:
+      - database_settings
+      - data_migration (placeholder)
+      - import_data (placeholder)
+      - export_data (placeholder)
+      - operation_history (placeholder)
+  system_config_page:
+    path: /admin/system-config
+    access: Admin role only
+    layout: Settings-like (left nav, right content)
+    sections:
+      - general_settings (placeholder)
+      - city_parameters (set mock market rate)
+      - developer_tools_settings (toggle experimental features)
+
+tool_windows_floating:
+  general:
+    - Icons displayed vertically on right side, float upwards from bottom-right.
+    - Icons remain visible; active state (primary color glow) indicates open window.
+    - Expanded windows stack horizontally from the right, pushing others left, with margin.
+    - Visual drag indicators (GripVertical icon in header), visual resize cue (corner icon).
+    - Minimizable via header button (icon returns to inactive state).
+  dev_tools:
+    icon: Code
+    features:
+      - Role switcher dropdown (Admin, Buyer, Artist, Fan, Guest/Logged Out). Default: Admin.
+      - Feature Toggles (e.g., Enable Social Features, Discovery, Music Player, AI Features).
+      - Bank Account Linked checkbox (for Buyer/Artist roles).
+      - "Log Out" button functionality.
+  music_player_tool:
+    icon: Music
+    features: Mock UI for music playback (Search, Results, Now Playing, Play/Pause/Skip controls).
+  chat_tool:
+    icon: MessageSquare
+    access: Logged-in users only.
+    features:
+      - Mock UI for user-to-user messaging (Conversation list sidebar, main chat panel).
+      - Pinnable chats (adds item to Pinned Resources tool).
+  ai_sandbox_tool:
+    icon: Sparkles
+    access: Logged-in users only.
+    features: Placeholder content for AI experimentation. Triggerable from Scheduling page.
+  pinned_resources_tool:
+    icon: Pin
+    access: Logged-in users only.
+    features:
+      - Lists pinned items (Artist, Venue, Recording, Event, Genre, Chat, City).
+      - Items added via Pin buttons on respective resource cards/pages.
+      - Counter badge on collapsed icon (blue background) showing number of pinned items.
+      - Ability to remove pinned items from the list.
+      - Pins are session-only (mock, persisted via Zustand).
+  notifications_tool:
+    icon: Bell
+    access: Logged-in users only.
+    features: Mock notification display. Icon shows only if (mock) notifications exist. Unread count badge.
+
+styling_ui_conventions:
+  frameworks: ShadCN UI components, Tailwind CSS.
+  theme: Primarily dark theme (see `core_app_structure.theme`).
+  buttons: Slight top-to-bottom gradients on primary, destructive, secondary variants. Click feedback (scale, brightness).
+  responsiveness: Mobile-first considerations (e.g., filter bars become sheets, sidebar collapses).
+  images: `next/image` used for optimization, Unsplash URLs for images.
+  icons: `lucide-react` primarily used.
+  tooltips: Used for icon-only buttons and conveying info without labels.
+  scrollbars: Sleek, minimal, dark styled.
+  font_size: Base reduced by ~10%.
