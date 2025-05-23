@@ -4,14 +4,15 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Ticket, ListFilter, Loader2, X } from "lucide-react";
+import { Ticket, ListFilter, Loader2, X } from "lucide-react"; // Keep Ticket for noResultsMessage
 import { Sheet, SheetContent, SheetHeader, SheetTrigger } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { CardSkeleton } from "@/components/shared/card-skeleton";
+import { CardSkeleton } from "@/components/shared/card-skeleton"; // Keep for explicit pass to ItemGrid
 import EventCard from "@/components/cards/event-card";
-import type { EventClient, EventSortOption, CardSize, UIEventFilters as StoreEventFilters } from '@/types'; // Changed import
+import type { EventClient, EventSortOption, CardSize, UIEventFilters as StoreEventFilters } from '@/types';
 import FilterControls, { type FilterConfig } from "@/components/shared/filter-controls";
+import { ItemGrid } from '@/components/shared/item-grid'; // Import ItemGrid
 import { useDiscoveryPageLogic } from '@/hooks/useDiscoveryPageLogic';
 import { useDiscoveryFilterStore } from '@/stores/discoveryFiltersStore';
 import { allGenresList } from "@/data/mock-data/djs";
@@ -159,41 +160,42 @@ export default function EventDiscoveryPage() {
                 </div>
             </div>
         </div>
-         {(isLoading && displayedEvents.length === 0) ? (
-           <div className={`grid grid-cols-1 ${getGridColsClass()} gap-6`}>
-             {Array.from({ length: PAGE_LIMIT }).map((_, index) => (
-               <CardSkeleton key={index} />
-             ))}
-           </div>
-         ) : displayedEvents.length > 0 ? (
-            <>
-            <div className={`grid grid-cols-1 ${getGridColsClass()} gap-6 animate-slide-up-fade-in`}>
-              {displayedEvents.map((event, index) => (
-                <EventCard
-                    key={event.id}
-                    event={event}
-                    onFavoriteToggle={() => handleFavoriteToggle(event.id)}
-                    onPopOut={handlePopOut}
-                    isPriorityImage={index < PAGE_LIMIT / 2}
-                />
-              ))}
-          </div>
-            <div ref={loadMoreRef} className="h-16 flex items-center justify-center">
-                {isLoadingMore && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
-                {!hasMoreData && displayedEvents.length > 0 && <p className="text-sm text-muted-foreground">You've reached the end of the list.</p>}
-            </div>
-          </>
-        ) : (
+        <ItemGrid<EventClient>
+          isLoading={isLoading && displayedEvents.length === 0}
+          items={displayedEvents}
+          renderItem={(event, index) => (
+            <EventCard
+                key={event.id}
+                event={event}
+                onFavoriteToggle={() => handleFavoriteToggle(event.id)}
+                onPopOut={handlePopOut}
+                isPriorityImage={index < PAGE_LIMIT / 2}
+            />
+          )}
+          cardSize={currentCardSize}
+          pageLimit={PAGE_LIMIT}
+          noResultsMessage={
             <Card className="col-span-full">
-            <CardContent className="p-6 text-center">
-                <Ticket className="h-12 w-12 text-muted-foreground mx-auto mb-4"/>
-                <p className="text-xl text-muted-foreground">No events match your current filters.</p>
-                 <p className="text-sm text-muted-foreground mt-1">Try adjusting your criteria or <Button variant="link" className="p-0 h-auto" onClick={resetFiltersAndFetch}>reset all filters</Button>.</p>
+              <CardContent className="p-6 text-center">
+                  <Ticket className="h-12 w-12 text-muted-foreground mx-auto mb-4"/>
+                  <p className="text-xl text-muted-foreground">No events match your current filters.</p>
+                  <p className="text-sm text-muted-foreground mt-1">Try adjusting your criteria or <Button variant="link" className="p-0 h-auto" onClick={resetFiltersAndFetch}>reset all filters</Button>.</p>
                   <Button asChild variant="link" className="mt-2">
                       <Link href="/genres">Explore all genres</Link>
                   </Button>
-            </CardContent>
+              </CardContent>
             </Card>
+          }
+          getGridColsClass={getGridColsClass}
+          skeletonComponent={CardSkeleton}
+        />
+
+        {/* Infinite scroll loading indicator and end of list message */}
+        {displayedEvents.length > 0 && (
+            <div ref={loadMoreRef} className="h-16 flex items-center justify-center">
+                {isLoadingMore && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
+                {!isLoadingMore && !hasMoreData && <p className="text-sm text-muted-foreground">You've reached the end of the list.</p>}
+            </div>
         )}
       </main>
     </div>
