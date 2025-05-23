@@ -2,19 +2,25 @@
 "use client";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ListFilter, Loader2, ImageIcon, X, MapPin as MapPinIcon, Tags } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card"; // Keep for noResultsMessage
+import { ListFilter, Loader2, ImageIcon, X, MapPin as MapPinIcon, Tags } from "lucide-react"; // Keep ImageIcon for noResultsMessage
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTrigger } from "@/components/ui/sheet";
-import { CardSkeleton } from "@/components/shared/card-skeleton";
+// CardSkeleton import can be removed if ItemGrid's default is used and it's not explicitly passed.
+// However, the prompt says to pass it explicitly, so we might keep it if ItemGrid doesn't re-export it.
+// For now, let's assume it's passed explicitly or ItemGrid's default is sufficient.
+// If CardSkeleton is the default and not explicitly passed, we can remove this:
+import { CardSkeleton } from "@/components/shared/card-skeleton"; 
 import DJCard from "@/components/cards/dj-card";
-import type { DJClient, DjSortOption, CardSize, UIDjFilters as StoreDjFilters } from '@/types'; // Changed import
+import type { DJClient, DjSortOption, CardSize, UIDjFilters as StoreDjFilters } from '@/types';
 import FilterControls, { type FilterConfig } from "@/components/shared/filter-controls";
+import { ItemGrid } from '@/components/shared/item-grid'; // Import ItemGrid
 import { useDiscoveryPageLogic } from '@/hooks/useDiscoveryPageLogic';
 import { useDiscoveryFilterStore } from '@/stores/discoveryFiltersStore';
-import Image from "next/image";
+import Image from "next/image"; // For QuickView Dialog
+import Link from "next/link"; // For noResultsMessage
 import { allGenresList } from "@/data/mock-data/djs";
 
 const PAGE_LIMIT = 8;
@@ -174,31 +180,21 @@ export default function ArtistDiscoveryPage() {
                 </div>
             </div>
         </div>
-         {(isLoading && displayedDjs.length === 0) ? (
-           <div className={`grid grid-cols-1 ${getGridColsClass()} gap-6`}>
-             {Array.from({ length: PAGE_LIMIT }).map((_, index) => (
-               <CardSkeleton key={index} />
-             ))}
-           </div>
-         ) : displayedDjs.length > 0 ? (
-            <>
-            <div className={`grid grid-cols-1 ${getGridColsClass()} gap-6 animate-slide-up-fade-in`}>
-              {displayedDjs.map((dj, index) => (
-                <DJCard 
-                    key={dj.id}
-                    dj={dj}
-                    onFavoriteToggle={() => handleFavoriteToggle(dj.id)}
-                    onPopOut={handlePopOut}
-                    isPriorityImage={index < PAGE_LIMIT / 2} 
-                />
-              ))}
-          </div>
-          <div ref={loadMoreRef} className="h-16 flex items-center justify-center">
-            {isLoadingMore && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
-            {!hasMoreData && displayedDjs.length > 0 && <p className="text-sm text-muted-foreground">You've reached the end of the list.</p>}
-          </div>
-          </>
-        ) : (
+        <ItemGrid<DJClient>
+          isLoading={isLoading && displayedDjs.length === 0}
+          items={displayedDjs}
+          renderItem={(dj, index) => (
+            <DJCard 
+                key={dj.id}
+                dj={dj}
+                onFavoriteToggle={() => handleFavoriteToggle(dj.id)}
+                onPopOut={handlePopOut}
+                isPriorityImage={index < PAGE_LIMIT / 2} 
+            />
+          )}
+          cardSize={currentCardSize}
+          pageLimit={PAGE_LIMIT}
+          noResultsMessage={
             <Card className="col-span-full">
               <CardContent className="p-6 text-center">
                   <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -209,6 +205,19 @@ export default function ArtistDiscoveryPage() {
                   </Button>
               </CardContent>
             </Card>
+          }
+          getGridColsClass={getGridColsClass}
+          skeletonComponent={CardSkeleton} // Explicitly passing, so CardSkeleton import is needed
+          // className can be used for additional styling on the ItemGrid wrapper if needed
+          // itemClassName can be passed if individual item wrappers need specific classes
+        />
+
+        {/* Infinite scroll loading indicator and end of list message */}
+        {displayedDjs.length > 0 && (
+          <div ref={loadMoreRef} className="h-16 flex items-center justify-center">
+            {isLoadingMore && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
+            {!isLoadingMore && !hasMoreData && <p className="text-sm text-muted-foreground">You've reached the end of the list.</p>}
+          </div>
         )}
       </main>
 

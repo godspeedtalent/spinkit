@@ -5,9 +5,10 @@ import React from "react";
 import Link from "next/link";
 import type { DJClient } from '@/types';
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThumbsUp, Tags, MapPin } from "lucide-react";
 import BaseDiscoveryCard, { type BaseCardItemData } from "./base-discovery-card";
+import { MetadataItem } from '@/components/shared/metadata-item';
+import { EntityTags } from '@/components/shared/entity-tags';
 
 interface DJCardProps {
   dj: DJClient;
@@ -27,18 +28,14 @@ const DJCardComponent: React.FC<DJCardProps> = ({ dj, onFavoriteToggle, onPopOut
   };
 
   const primaryMeta = (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Link 
-            href={`/city/${encodeURIComponent((dj.location || "unknown").split(',')[0].trim())}`} 
-            className="flex items-center cursor-pointer hover:text-primary hover:underline active:opacity-75"
-        >
-          <MapPin className="mr-1 h-3.5 w-3.5" />
-          <span>{dj.location}</span>
-        </Link>
-      </TooltipTrigger>
-      <TooltipContent><p>Location: {dj.location}</p></TooltipContent>
-    </Tooltip>
+    <MetadataItem
+      icon={MapPin}
+      label="Location"
+      value={dj.location || 'N/A'}
+      href={`/city/${encodeURIComponent((dj.location || "unknown").split(',')[0].trim())}`}
+      tooltipContent={<p>Location: {dj.location || 'Not specified'}</p>}
+      className="cursor-pointer hover:text-primary active:opacity-75" // Removed hover:underline as Link in MetadataItem handles it
+    />
   );
 
   return (
@@ -52,30 +49,25 @@ const DJCardComponent: React.FC<DJCardProps> = ({ dj, onFavoriteToggle, onPopOut
       primaryMetaLine={primaryMeta}
     >
       <div className="space-y-2">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex items-center flex-wrap gap-1 cursor-default">
-              <Tags className="mr-1 h-3.5 w-3.5 text-muted-foreground" />
-              {dj.genres.slice(0, 3).map((genre) => (
-                <Link key={genre} href={`/genres/${encodeURIComponent(genre)}`} passHref legacyBehavior>
-                  <Badge variant="secondary" className="text-xs hover:bg-secondary/80 cursor-pointer">{genre}</Badge>
-                </Link>
-              ))}
-              {dj.genres.length > 3 && <Badge variant="secondary" className="text-xs">...</Badge>}
-            </div>
-          </TooltipTrigger>
-          <TooltipContent><p>Genres</p></TooltipContent>
-        </Tooltip>
+        <EntityTags
+          tags={dj.genres}
+          icon={Tags}
+          tooltipLabel="Genres"
+          tagLinkPrefix="/genres/"
+          visibleTagCount={3}
+          badgeVariant="secondary"
+          // className prop can be used if additional styling for the wrapper is needed.
+          // The EntityTags component handles icon margin and badge styling (including text-xs via default badge size).
+          // The icon's default color in EntityTags is text-muted-foreground, matching the original.
+        />
         {dj.score > 59 && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center text-sm text-muted-foreground cursor-default pt-1">
-                <ThumbsUp className="mr-1 h-3.5 w-3.5 text-primary" />
-                <span className="font-semibold text-primary">{dj.score}</span>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent><p>Score</p></TooltipContent>
-          </Tooltip>
+          <MetadataItem
+            icon={ThumbsUp}
+            label="Score"
+            value={<span className="font-semibold text-primary">{dj.score}</span>}
+            tooltipContent={<p>DJ Score: {dj.score}/100</p>}
+            className="pt-1 cursor-default"
+          />
         )}
       </div>
     </BaseDiscoveryCard>

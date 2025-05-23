@@ -4,11 +4,13 @@
 import React from "react";
 import Link from "next/link";
 import type { EventClient } from '@/types';
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge"; // Badge may still be used by EntityTags or other parts, keep for now
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"; // Keep for DJ Name Tooltip
 import { CalendarDays, MapPin, Users, Tags, MicVocal, Building2 } from "lucide-react";
 import BaseDiscoveryCard, { type BaseCardItemData } from "./base-discovery-card";
 import { generateUnsplashUrl } from "@/lib/utils";
+import { MetadataItem } from '@/components/shared/metadata-item';
+import { EntityTags } from '@/components/shared/entity-tags';
 
 interface EventCardProps {
   event: EventClient;
@@ -28,16 +30,14 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onFavoriteToggle,
   };
 
   const primaryMeta = (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="text-sm text-muted-foreground cursor-default">
-          <Link href={`/venues/${event.venueId || 'unknown'}`} className="flex items-center text-primary hover:underline active:opacity-75">
-            <Building2 className="mr-1.5 h-3.5 w-3.5" /> {event.venueName}
-          </Link>
-        </div>
-      </TooltipTrigger>
-      <TooltipContent><p>Venue</p></TooltipContent>
-    </Tooltip>
+    <MetadataItem
+      icon={Building2}
+      label="Venue"
+      value={event.venueName}
+      href={`/venues/${event.venueId || 'unknown'}`}
+      tooltipContent={<p>Venue: {event.venueName}</p>}
+      className="text-sm text-primary" // Matched original styling, Link in MetadataItem handles hover effects
+    />
   );
 
   const secondaryMeta = event.djName && event.djId ? (
@@ -64,49 +64,39 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onFavoriteToggle,
       secondaryMetaLine={secondaryMeta}
     >
       <div className="text-sm text-muted-foreground space-y-1.5 py-2">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex items-center cursor-default">
-              <CalendarDays className="mr-2 h-4 w-4 text-primary" />
-              <span>{new Date(event.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} at {event.time}</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent><p>Date & Time</p></TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Link href={`/city/${encodeURIComponent((event.city || "unknown").trim())}`} className="flex items-center cursor-pointer hover:text-primary hover:underline active:opacity-75">
-              <MapPin className="mr-2 h-4 w-4 text-primary" />
-              <span>{event.city}</span>
-            </Link>
-          </TooltipTrigger>
-          <TooltipContent><p>Location: {event.city}</p></TooltipContent>
-        </Tooltip>
+        <MetadataItem
+          icon={CalendarDays}
+          label="Date & Time"
+          value={`${new Date(event.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} at ${event.time}`}
+          tooltipContent={<p>Date & Time</p>}
+          className="cursor-default" // Icon styling is handled within MetadataItem, but can be overridden if needed
+        />
+        <MetadataItem
+          icon={MapPin}
+          label="Location"
+          value={event.city}
+          href={`/city/${encodeURIComponent((event.city || "unknown").trim())}`}
+          tooltipContent={<p>Location: {event.city}</p>}
+          className="cursor-pointer hover:text-primary" // Link in MetadataItem handles hover:underline
+        />
         {event.expectedAttendance && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center cursor-default">
-                <Users className="mr-2 h-4 w-4 text-primary" />
-                <span>Approx. {event.expectedAttendance}</span>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent><p>Expected Attendance</p></TooltipContent>
-          </Tooltip>
+          <MetadataItem
+            icon={Users}
+            label="Expected Attendance"
+            value={`Approx. ${event.expectedAttendance}`}
+            tooltipContent={<p>Expected Attendance</p>}
+            className="cursor-default"
+          />
         )}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex items-center flex-wrap gap-1 mt-1 cursor-default">
-              <Tags className="mr-1 h-3.5 w-3.5 text-muted-foreground" />
-              {event.genres.slice(0, 3).map((genre) => (
-                <Link key={genre} href={`/genres/${encodeURIComponent(genre)}`} passHref legacyBehavior>
-                  <Badge variant="secondary" className="text-xs hover:bg-secondary/80 cursor-pointer">{genre}</Badge>
-                </Link>
-              ))}
-              {event.genres.length > 3 && <Badge variant="secondary" className="text-xs">...</Badge>}
-            </div>
-          </TooltipTrigger>
-          <TooltipContent><p>Genres</p></TooltipContent>
-        </Tooltip>
+        <EntityTags
+          tags={event.genres}
+          icon={Tags}
+          tooltipLabel="Genres"
+          tagLinkPrefix="/genres/"
+          visibleTagCount={3}
+          badgeVariant="secondary"
+          className="mt-1" // Preserve original margin
+        />
       </div>
     </BaseDiscoveryCard>
   );

@@ -4,11 +4,16 @@
 import React from "react";
 import Link from "next/link";
 import type { VenueClient } from '@/types';
+// Badge import might be removed if EntityTags is the only consumer and it imports Badge itself.
+// For now, assume Badge might be used elsewhere or by EntityTags directly.
 import { Badge } from "@/components/ui/badge";
+// Tooltip imports will be removed if EntityTags is the only consumer of Tooltip for this section.
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Users, ThumbsUp, Tags, MapPin } from "lucide-react";
-import BaseDiscoveryCard, { type BaseCardItemData } from "./base-discovery-card"; // Corrected import
-import { generateUnsplashUrl } from "@/lib/utils"; // Import the helper for consistency
+import BaseDiscoveryCard, { type BaseCardItemData } from "./base-discovery-card";
+import { generateUnsplashUrl } from "@/lib/utils";
+import { MetadataItem } from '@/components/shared/metadata-item';
+import { EntityTags } from '@/components/shared/entity-tags';
 
 interface VenueCardProps {
   venue: VenueClient;
@@ -31,18 +36,14 @@ const VenueCardComponent: React.FC<VenueCardProps> = ({ venue, onFavoriteToggle,
   const cityNameForLink = venueLocationString ? venueLocationString.split(',')[0].trim() : 'unknown-city';
 
   const primaryMeta = (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Link 
-            href={`/city/${encodeURIComponent(cityNameForLink)}`} 
-            className="flex items-center cursor-pointer hover:text-primary hover:underline active:opacity-75"
-        >
-          <MapPin className="mr-1.5 h-3.5 w-3.5" />
-          <span>{venueLocationString || 'Location not available'}</span>
-        </Link>
-      </TooltipTrigger>
-      <TooltipContent><p>Location: {venueLocationString || 'N/A'}</p></TooltipContent>
-    </Tooltip>
+    <MetadataItem
+      icon={MapPin}
+      label="Location"
+      value={venueLocationString || 'Location not available'}
+      href={`/city/${encodeURIComponent(cityNameForLink)}`}
+      tooltipContent={<p>Location: {venueLocationString || 'N/A'}</p>}
+      className="cursor-pointer hover:text-primary active:opacity-75" // Link in MetadataItem handles hover:underline
+    />
   );
 
   return (
@@ -56,38 +57,34 @@ const VenueCardComponent: React.FC<VenueCardProps> = ({ venue, onFavoriteToggle,
       primaryMetaLine={primaryMeta}
     >
       <div className="text-sm text-muted-foreground space-y-1.5 py-2">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex items-center cursor-default">
-              <Users className="mr-1.5 h-3.5 w-3.5" />
-              <span>{venue.capacity}</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent><p>Capacity</p></TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex items-center cursor-default">
-              <ThumbsUp className="mr-1.5 h-3.5 w-3.5" />
-              <span>{venue.fanScore ? venue.fanScore.toFixed(1) : 'N/A'}/5.0</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent><p>Fan Score</p></TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex items-center flex-wrap gap-1 cursor-default">
-              <Tags className="mr-1 h-3.5 w-3.5 text-muted-foreground" />
-              {(venue.djNeeds || []).slice(0, 3).map(genre => (
-                <Link key={genre} href={`/genres/${encodeURIComponent(genre)}`} passHref legacyBehavior>
-                  <Badge variant="outline" className="text-xs hover:bg-accent cursor-pointer">{genre}</Badge>
-                </Link>
-              ))}
-              {(venue.djNeeds || []).length > 3 && <Badge variant="outline" className="text-xs">...</Badge>}
-            </div>
-          </TooltipTrigger>
-          <TooltipContent><p>Genres Needed</p></TooltipContent>
-        </Tooltip>
+        <MetadataItem
+          icon={Users}
+          label="Capacity"
+          value={venue.capacity}
+          tooltipContent={<p>Capacity: {venue.capacity}</p>}
+          className="cursor-default" // Original had no specific text color, default from text-muted-foreground
+        />
+        <MetadataItem
+          icon={ThumbsUp}
+          label="Fan Score"
+          value={`${venue.fanScore ? venue.fanScore.toFixed(1) : 'N/A'}/5.0`}
+          tooltipContent={<p>Fan Score: {venue.fanScore ? venue.fanScore.toFixed(1) : 'N/A'}/5.0</p>}
+          className="cursor-default" // Original had no specific text color
+        />
+        <EntityTags
+          tags={venue.djNeeds || []}
+          icon={Tags}
+          tooltipLabel="Genres Needed"
+          tagLinkPrefix="/genres/"
+          visibleTagCount={3}
+          badgeVariant="outline"
+          // EntityTags handles icon margin, badge text size (via default Badge size), and hover effects.
+          // The 'hover:bg-accent' for outline badges is a specific behavior for this variant.
+          // EntityTags's default linked badge hover is 'hover:bg-secondary/80'.
+          // If 'hover:bg-accent' is critical for 'outline' variant, EntityTags might need enhancement
+          // or a specific className passed to EntityTags to target its badges.
+          // For now, we rely on EntityTags default hover or what its Badge component provides for 'outline'.
+        />
       </div>
     </BaseDiscoveryCard>
   );
