@@ -2,13 +2,11 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
 import type { DJClient } from '@/types';
-import { Badge } from "@/components/ui/badge";
 import { ThumbsUp, Tags, MapPin } from "lucide-react";
 import BaseDiscoveryCard, { type BaseCardItemData } from "./base-discovery-card";
-import { MetadataItem } from '@/components/shared/metadata-item';
-import { EntityTags } from '@/components/shared/entity-tags';
+import MetadataItem from '@/components/shared/metadata-item';
+import EntityTags from '@/components/shared/entity-tags';
 
 interface DJCardProps {
   dj: DJClient;

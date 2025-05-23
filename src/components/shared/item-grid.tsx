@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import CardSkeleton from '@/components/shared/card-skeleton'; // Default skeleton
+import { CardSkeleton } from '@/components/shared/card-skeleton'; // Default skeleton
 
 export type CardSize = 'small' | 'medium' | 'large';
 
