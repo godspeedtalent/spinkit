@@ -29,7 +29,9 @@ import {
 import { useAuthStore } from "@/stores/authStore";
 import { useUserPreferencesStore } from "@/stores/userPreferencesStore"; // Import user preferences store
 
-interface SidebarNavProps extends React.HTMLAttributes<HTMLElement> {}
+interface SidebarNavProps extends React.HTMLAttributes<HTMLElement> {
+  setIsPageLoading: React.Dispatch<React.SetStateAction<boolean>>;
+}
 
 interface UserAccountNavProps {
   currentUserRole: UserRole;
@@ -91,7 +93,7 @@ const UserAccountNavComponent: React.FC<UserAccountNavProps> = ({ currentUserRol
 };
 SidebarNav.UserAccountNav = UserAccountNavComponent;
 
-export function SidebarNav({ className, ...props }: SidebarNavProps) {
+export function SidebarNav({ className, setIsPageLoading, ...props }: SidebarNavProps) {
   const pathname = usePathname();
   const { state: sidebarCurrentState, isMobile } = useSidebar();
   const { currentUserRole } = useAuthStore();
@@ -211,6 +213,7 @@ export function SidebarNav({ className, ...props }: SidebarNavProps) {
             )}
             isActive={item.exactMatch ? pathname === item.href : pathname.startsWith(item.href)}
             tooltip={item.description || item.title}
+            onClick={() => setIsPageLoading(true)}
           >
             {!isPopover && item.icon && <item.icon className={cn("mr-2 flex-shrink-0", isSubItem ? "h-3.5 w-3.5" : "h-4 w-4")} />}
             {(sidebarCurrentState === 'expanded' || isMobile || isPopover) && <span className="truncate">{item.title}</span>}

@@ -46,6 +46,7 @@ import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import FocusedSearchOverlay from "@/components/shared/focused-search-overlay";
 import ShortcutGuideDialog from "@/components/shared/shortcut-guide-dialog";
 import CalendarQuickViewDialog from "@/components/shared/CalendarQuickViewDialog";
+import CompactLoadingIndicator from "@/components/shared/CompactLoadingIndicator";
 
 // Lazy load tool window components
 const DevTools = React.lazy(() => import("@/components/dev/dev-tools"));
@@ -102,6 +103,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const [mounted, setMounted] = useState(false);
   const [isShortcutGuideOpen, setIsShortcutGuideOpen] = useState(false);
+  const [isPageLoading, setIsPageLoading] = React.useState(false);
 
   const handleCityChange = useCallback((city: string) => {
     setCurrentCity(city);
@@ -142,6 +144,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [mounted, authStoreIsAuthenticated, nextPathname, router]);
 
+  useEffect(() => {
+    setIsPageLoading(false);
+  }, [nextPathname, setIsPageLoading]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -211,7 +216,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     <AppNameAndLogo />
                     </SidebarHeader>
                     <SidebarContent className="p-2 flex-grow">
-                    <SidebarNav />
+                    <SidebarNav setIsPageLoading={setIsPageLoading} />
                     </SidebarContent>
                     <SidebarFooter className="p-2 border-t border-sidebar-border">
                        <SidebarNav.UserAccountNav currentUserRole={currentUserRole} onLogout={() => authStoreLogout()} />
@@ -367,6 +372,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             {mounted && <CalendarQuickViewDialog />} 
             <ShortcutGuideDialog isOpen={isShortcutGuideOpen} onOpenChange={setIsShortcutGuideOpen} />
             <Toaster />
+            {isPageLoading && (
+              <div className="fixed inset-0 z-[200] flex items-center justify-center bg-background/80 backdrop-blur-sm">
+                <CompactLoadingIndicator message="Loading page..." />
+              </div>
+            )}
         </div>
     </TooltipProvider>
   );
