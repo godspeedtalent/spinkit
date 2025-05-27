@@ -5,7 +5,7 @@ import allGenresJson from '@/data/mock-data/json/genres.json';
 import djsDataJson from '@/data/mock-data/json/djs.json';
 import venuesDataJson from '@/data/mock-data/json/venues.json';
 
-const djs: DJ[] = djsDataJson as DJ[];
+const djs: DJ[] = djsDataJson as unknown as DJ[];
 const venues: Venue[] = venuesDataJson as Venue[];
 
 export class LocalJsonGenreRepository implements IGenreRepository {
@@ -49,4 +49,6 @@ export class LocalJsonGenreRepository implements IGenreRepository {
         topArtists: topArtists,
         topVenues: topVenues,
       };
-    
+    }
+  }
+}
