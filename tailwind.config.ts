@@ -7,6 +7,9 @@ export default {
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+  safelist: [
+    'm-0',
+  ],
   theme: {
   	extend: {
   		colors: {
