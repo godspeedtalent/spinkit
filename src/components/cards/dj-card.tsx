@@ -5,8 +5,8 @@ import React from "react";
 import type { DJClient } from '@/types';
 import { ThumbsUp, Tags, MapPin } from "lucide-react";
 import BaseDiscoveryCard, { type BaseCardItemData } from "./base-discovery-card";
-import MetadataItem from '@/components/shared/metadata-item';
-import EntityTags from '@/components/shared/entity-tags';
+import { MetadataItem } from '@/components/shared/metadata-item';
+import { EntityTags } from '@/components/shared/entity-tags';
 
 interface DJCardProps {
   dj: DJClient;

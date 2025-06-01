@@ -15,7 +15,7 @@ interface EntityTagsProps {
   className?: string;
 }
 
-const EntityTags: React.FC<EntityTagsProps> = ({
+export const EntityTags: React.FC<EntityTagsProps> = ({
   tags,
   icon: Icon,
   tooltipLabel,
@@ -64,5 +64,3 @@ const EntityTags: React.FC<EntityTagsProps> = ({
     </TooltipProvider>
   );
 };
-
-export default EntityTags;
