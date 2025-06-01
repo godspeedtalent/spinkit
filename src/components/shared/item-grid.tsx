@@ -19,7 +19,7 @@ export interface ItemGridProps<T> {
 
 const DEFAULT_PAGE_LIMIT = 8;
 
-function ItemGrid<T>({
+export function ItemGrid<T>({
   isLoading,
   items,
   renderItem,
@@ -79,5 +79,3 @@ function ItemGrid<T>({
 
   return null; // Should not be reached if logic is correct
 }
-
-export default ItemGrid;

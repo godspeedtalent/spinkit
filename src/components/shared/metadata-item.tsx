@@ -12,7 +12,7 @@ interface MetadataItemProps {
   className?: string;
 }
 
-const MetadataItem: React.FC<MetadataItemProps> = ({
+export const MetadataItem: React.FC<MetadataItemProps> = ({
   icon: Icon,
   label,
   value,
@@ -48,5 +48,3 @@ const MetadataItem: React.FC<MetadataItemProps> = ({
     </TooltipProvider>
   );
 };
-
-export default MetadataItem;
