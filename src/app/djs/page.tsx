@@ -16,7 +16,7 @@ import { CardSkeleton } from "@/components/shared/card-skeleton";
 import DJCard from "@/components/cards/dj-card";
 import type { DJClient, DjSortOption, CardSize, UIDjFilters as StoreDjFilters } from '@/types';
 import FilterControls, { type FilterConfig } from "@/components/shared/filter-controls";
-import ItemGrid from '@/components/shared/item-grid'; // Import ItemGrid
+import { ItemGrid } from '@/components/shared/item-grid'; // Import ItemGrid
 import { useDiscoveryPageLogic } from '@/hooks/useDiscoveryPageLogic';
 import { useDiscoveryFilterStore } from '@/stores/discoveryFiltersStore';
 import Image from "next/image"; // For QuickView Dialog

@@ -1,5 +1,5 @@
 // src/app/api/admin/notion/export-database/[databaseId]/route.ts
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { getNotionClient } from '@/lib/notionClient';
 import type { PageObjectResponse, PartialPageObjectResponse, DatabaseObjectResponse, PartialDatabaseObjectResponse } from '@notionhq/client/build/src/api-endpoints';
 
@@ -95,10 +95,10 @@ function transformNotionPageProperties(properties: PageObjectResponse['propertie
 
 
 export async function GET(
-  request: Request,
-  { params }: { params: { databaseId: string } }
+  request: NextRequest,
+  { params }: { params: { databaseId: string } } // Meticulously standard pattern
 ) {
-  const databaseId = params.databaseId;
+  const databaseId = params.databaseId; // Accessing it correctly
 
   if (!databaseId) {
     return NextResponse.json({ error: 'Database ID is required' }, { status: 400 });
